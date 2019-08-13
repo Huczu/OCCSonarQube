@@ -60,7 +60,7 @@ public:
 		std::wstring covered;
 		for ( const auto &file_iter : coverage )
 		{
-			ofs << L"  <file path=\"" << file_iter.first << L"\">" << std::endl;
+			ofs << L"  <file path=\"" << GetActualPathName(file_iter.first) << L"\">" << std::endl;
 			for ( const auto &line_iter : file_iter.second )
 			{
 				covered = line_iter.second ? L"true" : L"false";
@@ -95,6 +95,30 @@ public:
 
 protected:
 	std::unordered_map< std::wstring, std::map<size_t, bool> > coverage;
+private:
+    std::wstring GetActualPathName(std::wstring path)
+    {
+		std::wstring result;
+		const auto length = path.size();
+		const wchar_t kSeparator = L'\\';
+		if (length >= 2 && path[1] == L':')
+		{
+		    result += towupper(path[0]);
+		    result += L':';
+		}
+		DWORD pathLength = length + 1;
+		WCHAR* linkName = new WCHAR[pathLength];
+		HANDLE hFind = FindFirstFileNameW(path.c_str(), 0, &pathLength, linkName);
+		if (hFind == INVALID_HANDLE_VALUE)
+		{
+			delete[] linkName;
+			return path;
+		}
+		FindClose(hFind);
+		result += linkName;
+		delete[] linkName;
+		return result;
+    }
 };
 
 extern "C"
